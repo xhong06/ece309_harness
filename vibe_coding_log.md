@@ -1,6 +1,6 @@
 This is the file with the vibe coding log.
 
-(This is the prompt submitted to Claude Code)
+(This is the first prompt submitted to Claude Code)
 Prompt 1:
 I need to write a simple command-line program in C. I am a beginner, so please keep the 
 code as simple as possible. As a constraint, do not use external libraries, only use standard ones like <stdio.h> 
@@ -129,3 +129,153 @@ Enter a message (type 'exit' to quit): ex it
 You said: ex it
 Enter a message (type 'exit' to quit): exit
 Goodbye!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(This is the second prompt submitted to Claude Code. This prompt's purpose is to generate a testing script for the code generated in prompt 1)
+Prompt 2:
+I have a compiled C program named harness. Write a very simple Bash script (for 
+Linux) that automatically sends the word 'hello', followed by the word 'exit', into the 
+program to verify if it works.
+
+
+
+
+
+
+Response 2:
+Here's a simple Bash script that pipes those two words into your `harness` program, one per line:
+
+```bash
+#!/bin/bash
+# Simple test script for the 'harness' program
+
+# printf builds the input: one word per line, just like a user typing and pressing Enter.
+# "hello\n" simulates typing "hello" and hitting Enter.
+# "exit\n" simulates typing "exit" and hitting Enter.
+# The pipe (|) sends that text into harness's standard input, as if it were typed live.
+printf "hello\nexit\n" | ./harness
+```
+
+### How to use it
+1. Save this as, e.g., `test_harness.sh` in the same folder as your compiled `harness` program.
+2. Make it executable:
+   ```bash
+   chmod +x test_harness.sh
+   ```
+3. Run it:
+   ```bash
+   ./test_harness.sh
+   ```
+
+### What should happen
+You should see your program's prompt printed twice, followed by the "hello" greeting message, then "Goodbye!" — all without you having to type anything by hand.
+
+### A couple of notes
+- `printf` is used instead of `echo` here because it handles `\n` (newline) predictably across systems — `echo` can behave differently depending on the shell.
+- If you want to see the exact output for automated checking (e.g., in a test suite), you could redirect it into a file instead:
+  ```bash
+  printf "hello\nexit\n" | ./harness > output.txt
+  ```
+  Then use `cat output.txt` or `grep` to check the results match what you expect.
+
+
+
+
+
+
+
+Prompt 3:
+When I attempted to run ./test_harness.sh I was met with the following error:
+
+xande@XHong-Laptop:/mnt/c/Users/xande/ece309_harness$ ./test_harness.sh
+-bash: ./test_harness.sh: /bin/bash^M: bad interpreter: No such file or directory
+
+What I expected to see was my program's prompt printed twice, followed by the "hello" greeting message, then "Goodbye!"
+
+test_harness.sh is in the same folder as my compiled harness program.
+
+Can you find the error and the correct fix?
+
+
+
+
+Response 3:
+That `^M` in the error is the tell-tale sign — your script has **Windows-style line endings (CRLF)** instead of **Unix-style (LF)**. This usually happens when a file is created or saved with a Windows text editor (like Notepad, or even copy-pasting into some editors on Windows) before being used in a Linux/WSL environment.
+
+Bash reads the very first line `#!/bin/bash`, but because of the extra `\r` (carriage return, shown as `^M`) at the end of the line, it's actually looking for an interpreter named `/bin/bash^M` — which doesn't exist, hence the error.
+
+### The fix
+You have a few easy options, all run from your WSL terminal in that folder:
+
+**Option 1: Use `dos2unix` (simplest, if installed)**
+```bash
+dos2unix test_harness.sh
+```
+If it's not installed, you can get it with:
+```bash
+sudo apt install dos2unix
+```
+
+**Option 2: Use `sed` (no extra install needed)**
+```bash
+sed -i 's/\r$//' test_harness.sh
+```
+This strips the trailing `\r` from every line in place.
+
+**Option 3: Recreate the file directly in Linux**
+If you don't want to install anything, you can just rewrite the file using a Linux-native tool like `nano` or `vim` inside WSL, which won't add `\r` characters. Or use `cat` with a heredoc:
+```bash
+cat > test_harness.sh << 'EOF'
+#!/bin/bash
+printf "hello\nexit\n" | ./harness
+EOF
+chmod +x test_harness.sh
+```
+
+### After fixing
+Run it again:
+```bash
+./test_harness.sh
+```
+
+### Why this happened
+It's likely you created or edited the script using a Windows-based tool (e.g., VS Code with default settings on Windows, Notepad, or dragging/dropping through Windows Explorer) before moving to your WSL terminal. Going forward, if you're editing scripts that will run in WSL, you can avoid this by:
+- Using VS Code's WSL Remote extension (edits the file "as if" you're in Linux), or
+- Checking the line-ending setting in your editor (usually shown in the bottom status bar in VS Code) and setting it to **LF** instead of **CRLF**.
+
+
+
+
+
+
+
+
+
+(Final iteration of the test_harness.sh which correctly tested the harness.c script)
+Final test_harness.sh:
+#!/bin/bash
+# Simple test script for the 'harness' program
+
+# printf builds the input: one word per line, just like a user typing and pressing Enter.
+# "hello\n" simulates typing "hello" and hitting Enter.
+# "exit\n" simulates typing "exit" and hitting Enter.
+# The pipe (|) sends that text into harness's standard input, as if it were typed live.
+printf "hello\nexit\n" | ./harness
